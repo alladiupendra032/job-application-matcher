@@ -62,6 +62,33 @@ def compute_similarity(api_key, resume_text, job_desc):
     except Exception as e:
         raise ValueError(f"API call failed: {str(e)}")
 
+def analyze_skills(api_key, resume_text, job_desc):
+    """
+    Analyzes the resume and job description to extract matching skills,
+    missing skills, and improvement advice using an LLM.
+    """
+    try:
+        # Initialize client using the provided API key (token parameter is used for backward compatibility)
+        # Avoid provider="hf-inference" as it uses the strict router API which causes 404s for non-partner models
+        client = InferenceClient(token=api_key)
+        
+        messages = [
+            {"role": "system", "content": "You are a professional HR assistant. Help the user compare the resume to the job description."},
+            {"role": "user", "content": f"Compare this resume and job description.\n\nResume:\n{resume_text[:1500]}\n\nJob description:\n{job_desc[:1500]}\n\nProvide:\n1. What skills match\n2. What skills are missing\n3. Short improvement advice"}
+        ]
+        
+        # Qwen2.5 72B Instruct is currently the default and fully supported open model on HF Serverless
+        response = client.chat_completion(
+            messages=messages,
+            model="Qwen/Qwen2.5-72B-Instruct",
+            max_tokens=350
+        )
+        
+        return response.choices[0].message.content
+        
+    except Exception as e:
+        return f"Could not generate analysis: {str(e)}"
+
 def process(api_key, file, job_desc):
     """
     Main pipeline function to process the inputs and return the output.
@@ -69,29 +96,32 @@ def process(api_key, file, job_desc):
     try:
         # 1. Error handling for inputs
         if not api_key.strip():
-            return "❌ Error: API key is missing."
+            return "❌ Error: API key is missing.", ""
         if file is None:
-            return "❌ Error: File is not uploaded."
+            return "❌ Error: File is not uploaded.", ""
         if not job_desc.strip():
-            return "❌ Error: Job description is empty."
+            return "❌ Error: Job description is empty.", ""
 
         # 2. Extract text from PDF
         try:
             resume_text = extract_text(file)
         except ValueError as e:
-            return f"❌ Error: {str(e)}"
+            return f"❌ Error: {str(e)}", ""
 
         # 3. Compute similarity
         try:
             score = compute_similarity(api_key, resume_text, job_desc)
         except ValueError as e:
-            return f"❌ Error: {str(e)}"
+            return f"❌ Error: {str(e)}", ""
 
-        # 4. Return final formatted output
-        return f"✅ Match Score: {score}%"
+        # 4. Analyze skills
+        analysis_text = analyze_skills(api_key, resume_text, job_desc)
+
+        # 5. Return final formatted output
+        return f"✅ Match Score: {score}%", analysis_text
         
     except Exception as e:
-        return f"❌ An unexpected error occurred: {str(e)}"
+        return f"❌ An unexpected error occurred: {str(e)}", ""
 
 # Define the Gradio Interface using Blocks
 with gr.Blocks(theme=gr.themes.Soft(), title="job application matcher") as app:
@@ -136,11 +166,17 @@ with gr.Blocks(theme=gr.themes.Soft(), title="job application matcher") as app:
                 lines=2
             )
             
+            # Analysis Display
+            analysis_box = gr.Textbox(
+                label="💡 Analysis (Matches, Missing & Advice)",
+                lines=8
+            )
+            
     # Connect button click to process function
     match_btn.click(
         fn=process,
         inputs=[api_key_input, resume_input, job_desc_input],
-        outputs=output_box
+        outputs=[output_box, analysis_box]
     )
 
 if __name__ == "__main__":
