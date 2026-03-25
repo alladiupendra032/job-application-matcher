@@ -1,6 +1,6 @@
 import gradio as gr
 from huggingface_hub import InferenceClient
-import PyPDF2
+import pypdf
 
 def extract_text(file):
     """
@@ -12,7 +12,7 @@ def extract_text(file):
         text = ""
         # The file object from Gradio has a 'name' attribute containing the temp filepath
         with open(file.name, "rb") as f:
-            reader = PyPDF2.PdfReader(f)
+            reader = pypdf.PdfReader(f)
             for page in reader.pages:
                 page_text = page.extract_text()
                 if page_text:
