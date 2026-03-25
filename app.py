@@ -181,4 +181,4 @@ with gr.Blocks(title="job application matcher") as app:
 
 if __name__ == "__main__":
     # Launching on a new port to bypass your older frozen server instances
-    app.launch(server_port=7865, ssr_mode=False, theme=gr.themes.Soft())
+    app.launch(server_name="0.0.0.0", server_port=7865, ssr_mode=False, theme=gr.themes.Soft())
