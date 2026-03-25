@@ -180,4 +180,4 @@ with gr.Blocks(title="job application matcher") as app:
     )
 
 if __name__ == "__main__":
-    app.launch(ssr_mode=False, theme=gr.themes.Soft())
+    app.launch(ssr_mode=False, theme=gr.themes.Soft(), share=True)
