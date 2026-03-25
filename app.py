@@ -124,7 +124,7 @@ def process(api_key, file, job_desc):
         return f"❌ An unexpected error occurred: {str(e)}", ""
 
 # Define the Gradio Interface using Blocks
-with gr.Blocks(theme=gr.themes.Soft(), title="job application matcher") as app:
+with gr.Blocks(title="job application matcher") as app:
     # Title and description using Markdown
     gr.Markdown("# 📄 Resume & Job Description Matcher 🎯")
     gr.Markdown(
@@ -181,4 +181,4 @@ with gr.Blocks(theme=gr.themes.Soft(), title="job application matcher") as app:
 
 if __name__ == "__main__":
     # Launching on a new port to bypass your older frozen server instances
-    app.launch(server_port=7865, share=True, ssr_mode=False)
+    app.launch(server_port=7865, ssr_mode=False, theme=gr.themes.Soft())
