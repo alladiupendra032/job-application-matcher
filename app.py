@@ -116,34 +116,103 @@ def process(api_key, file, job_desc):
         return f"❌ An unexpected error occurred: {str(e)}", ""
 
 
-with gr.Blocks(title="Job application matcher") as demo:
-    gr.Markdown("# Resume and job description matcher")
-    gr.Markdown(
-        "Upload your resume (PDF) and paste the job description. "
-        "Matching uses Hugging Face Inference API (`all-MiniLM-L6-v2`). "
-        "Enter your API key when you run a match — nothing is loaded until you click **Match resume**."
+_UI_CSS = """
+.gradio-container { max-width: 1120px !important; margin: auto !important; }
+.hero-wrap {
+  border-radius: 18px;
+  padding: 1.35rem 1.5rem 1.5rem;
+  margin-bottom: 1.25rem;
+  background: linear-gradient(125deg, #4f46e5 0%, #7c3aed 42%, #0ea5e9 100%);
+  box-shadow: 0 12px 40px rgba(79, 70, 229, 0.35);
+  color: #f8fafc;
+}
+.hero-wrap h1 { margin: 0; font-size: 1.65rem; font-weight: 700; letter-spacing: -0.02em; }
+.hero-wrap p { margin: 0.55rem 0 0; font-size: 0.98rem; line-height: 1.5; opacity: 0.95; }
+.hero-wrap code { background: rgba(15,23,42,0.35); padding: 0.12rem 0.4rem; border-radius: 6px; font-size: 0.88em; }
+.panel-in {
+  border-radius: 14px !important;
+  padding: 0.35rem !important;
+  background: linear-gradient(145deg, rgba(99,102,241,0.12), rgba(14,165,233,0.08)) !important;
+}
+.panel-out {
+  border-radius: 14px !important;
+  padding: 0.35rem !important;
+  background: linear-gradient(145deg, rgba(16,185,129,0.1), rgba(99,102,241,0.06)) !important;
+}
+.match-btn-wrap button {
+  font-weight: 600 !important;
+  font-size: 1.02rem !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 12px !important;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed, #0ea5e9) !important;
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4) !important;
+}
+.match-btn-wrap button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+"""
+
+_theme = gr.themes.Soft(
+    primary_hue="indigo",
+    secondary_hue="teal",
+    neutral_hue="slate",
+    font=[gr.themes.GoogleFont("DM Sans"), "ui-sans-serif", "system-ui", "sans-serif"],
+).set(
+    body_background_fill_dark="#0f172a",
+    block_background_fill_dark="#1e293b",
+    block_border_width="1px",
+    block_label_text_size="sm",
+    input_background_fill_dark="#334155",
+    button_primary_background_fill="linear-gradient(90deg, *primary_500, *secondary_500)",
+)
+
+with gr.Blocks(
+    title="Job application matcher",
+    theme=_theme,
+    css=_UI_CSS,
+) as demo:
+    gr.HTML(
+        """
+<div class="hero-wrap">
+  <h1>📄 Resume &amp; job description matcher 🎯</h1>
+  <p>
+    Upload your <strong>PDF resume</strong>, paste the <strong>job description</strong>, then hit
+    <strong>Match resume</strong>. Scoring uses Hugging Face Inference with
+    <code>sentence-transformers/all-MiniLM-L6-v2</code> — your API key is only used when you submit.
+  </p>
+</div>
+        """
     )
 
-    with gr.Row():
-        with gr.Column(scale=1):
+    with gr.Row(equal_height=False):
+        with gr.Column(scale=1, elem_classes=["panel-in"]):
             api_key_input = gr.Textbox(
-                label="Hugging Face API key",
+                label="🔑 Hugging Face API key",
                 type="password",
                 placeholder="hf_...",
+                info="Create a token under Settings → Access tokens (read is enough for many models).",
             )
-            resume_input = gr.File(label="Resume (PDF)", file_types=[".pdf"])
+            resume_input = gr.File(
+                label="📁 Upload resume (PDF)",
+                file_types=[".pdf"],
+            )
             job_desc_input = gr.Textbox(
-                label="Job description",
-                lines=7,
-                placeholder="Paste the job description here...",
+                label="📝 Job description",
+                lines=8,
+                placeholder="Paste the full job description here (role, requirements, nice-to-haves)...",
             )
-            match_btn = gr.Button("Match resume", variant="primary")
+            with gr.Row(elem_classes=["match-btn-wrap"]):
+                match_btn = gr.Button("🚀 Match resume", variant="primary", scale=1)
 
-        with gr.Column(scale=1):
-            output_box = gr.Textbox(label="Match result", lines=2)
+        with gr.Column(scale=1, elem_classes=["panel-out"]):
+            output_box = gr.Textbox(
+                label="📊 Match result",
+                lines=3,
+                placeholder="Your match score will show here…",
+            )
             analysis_box = gr.Textbox(
-                label="Analysis (matches, gaps, advice)",
-                lines=10,
+                label="💡 Analysis — matches, gaps & advice",
+                lines=14,
+                placeholder="Structured tips from the model will appear here…",
             )
 
     match_btn.click(
